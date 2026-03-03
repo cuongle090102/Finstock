@@ -1,0 +1,213 @@
+{
+  "uid": "portfolio-pnl",
+  "title": "5. Portfolio P&L & Equity Curve",
+  "tags": ["trading", "pnl", "portfolio", "equity"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "symbol",
+        "type": "query",
+        "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+        "query": "SELECT DISTINCT symbol FROM paper_trades ORDER BY symbol",
+        "refresh": 1,
+        "current": {"text": "All", "value": "$__all"},
+        "multi": true,
+        "includeAll": true,
+        "allValue": "",
+        "label": "Symbol"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total Realized P&L",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COALESCE(SUM(pnl), 0) as \"Total P&L\" FROM paper_trades",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0}]}
+        }
+      },
+      "options": {"graphMode": "area", "textMode": "value", "colorMode": "value"}
+    },
+    {
+      "id": 2,
+      "title": "Today's P&L",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COALESCE(total_pnl, 0) as \"Today P&L\" FROM daily_pnl WHERE date = CURRENT_DATE ORDER BY timestamp DESC LIMIT 1",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND",
+          "noValue": "0",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0}]}
+        }
+      },
+      "options": {"graphMode": "none", "textMode": "value", "colorMode": "value"}
+    },
+    {
+      "id": 3,
+      "title": "Win Rate",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT ROUND(COUNT(*) FILTER (WHERE pnl > 0)::numeric / NULLIF(COUNT(*), 0) * 100, 1) as \"Win Rate\" FROM paper_trades WHERE side = 'SELL'",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "N/A",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 40}, {"color": "green", "value": 55}]}
+        }
+      },
+      "options": {"graphMode": "none", "textMode": "value", "colorMode": "value"}
+    },
+    {
+      "id": 4,
+      "title": "Total Trades",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COUNT(*) as \"Total Trades\" FROM paper_trades",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}
+        }
+      },
+      "options": {"graphMode": "none", "textMode": "value", "colorMode": "value"}
+    },
+    {
+      "id": 5,
+      "title": "Equity Curve (Cumulative P&L)",
+      "type": "timeseries",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 4},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT timestamp as time, SUM(pnl) OVER (ORDER BY timestamp) as \"Cumulative P&L\" FROM paper_trades WHERE $__timeFilter(timestamp) AND side = 'SELL' ORDER BY timestamp",
+          "refId": "A",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND",
+          "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 15, "gradientMode": "scheme", "showPoints": "never"},
+          "color": {"mode": "continuous-GrYlRd"}
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Daily P&L",
+      "type": "timeseries",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 14, "x": 0, "y": 13},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT timestamp as time, total_pnl as \"Daily P&L\" FROM daily_pnl WHERE $__timeFilter(timestamp) ORDER BY timestamp",
+          "refId": "A",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND",
+          "custom": {"drawStyle": "bars", "fillOpacity": 80, "lineWidth": 0, "gradientMode": "scheme", "showPoints": "never"},
+          "color": {"mode": "continuous-GrYlRd"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0}]}
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "P&L by Symbol",
+      "type": "barchart",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 10, "x": 14, "y": 13},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT symbol, SUM(pnl) as \"P&L\" FROM paper_trades WHERE side = 'SELL' GROUP BY symbol ORDER BY \"P&L\" DESC",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND",
+          "color": {"mode": "continuous-GrYlRd"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0}]}
+        }
+      },
+      "options": {"orientation": "horizontal", "xTickLabelRotation": 0, "showValue": "auto"}
+    },
+    {
+      "id": 8,
+      "title": "Recent Trades",
+      "type": "table",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 21},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT timestamp as \"Time\", symbol as \"Symbol\", side as \"Side\", quantity as \"Qty\", price as \"Price\", commission as \"Comm\", tax as \"Tax\", pnl as \"P&L\", strategy as \"Strategy\" FROM paper_trades ORDER BY timestamp DESC LIMIT 30",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Time"}, "properties": [{"id": "unit", "value": "dateTimeAsLocal"}]},
+          {"matcher": {"id": "byName", "options": "Price"}, "properties": [{"id": "unit", "value": "currencyVND"}]},
+          {"matcher": {"id": "byName", "options": "Comm"}, "properties": [{"id": "unit", "value": "currencyVND"}]},
+          {"matcher": {"id": "byName", "options": "Tax"}, "properties": [{"id": "unit", "value": "currencyVND"}]},
+          {"matcher": {"id": "byName", "options": "P&L"}, "properties": [{"id": "unit", "value": "currencyVND"}, {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0}]}}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}]},
+          {"matcher": {"id": "byName", "options": "Side"}, "properties": [{"id": "mappings", "value": [{"type": "value", "options": {"BUY": {"text": "BUY", "color": "green"}}}, {"type": "value", "options": {"SELL": {"text": "SELL", "color": "red"}}}]}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}]}
+        ]
+      }
+    }
+  ],
+  "schemaVersion": 38
+}

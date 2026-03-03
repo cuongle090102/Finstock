@@ -1,0 +1,28 @@
+# Airflow DAGs Requirements
+# Install these packages in Airflow container for DAG execution
+
+# Database - Compatible with Airflow 2.8.1
+psycopg2-binary==2.9.9
+sqlalchemy==1.4.51
+
+# Data Processing
+pandas==2.1.4
+numpy==1.26.2
+pyarrow==14.0.1
+
+# Technical Analysis
+ta==0.11.0
+
+# Kafka
+kafka-python==2.0.2
+
+# MinIO S3
+minio==7.2.0
+
+# Machine Learning (for optimization)
+scikit-learn==1.3.2
+scipy==1.11.4
+
+# Utilities
+PyYAML==6.0.1
+python-dateutil==2.8.2

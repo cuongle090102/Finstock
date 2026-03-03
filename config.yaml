@@ -1,0 +1,17 @@
+# Vietnamese Trading System Settings
+
+trading:
+  mode: paper  # paper or live
+  max_position_size: 100000000  # 100M VND
+  max_portfolio_value: 1000000000  # 1B VND
+  
+risk:
+  var_confidence: 0.95
+  var_horizon: 1  # days
+  max_var: 0.02  # 2% of portfolio
+  position_limit: 0.1  # 10% per position
+  
+data:
+  sources:
+    - vnstock
+  cache_ttl: 3600  # 1 hour

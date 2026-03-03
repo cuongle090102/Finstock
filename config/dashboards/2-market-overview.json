@@ -1,0 +1,182 @@
+{
+  "uid": "market-overview",
+  "title": "2. Market Overview",
+  "tags": ["market", "overview", "vn30"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Top Gainers (Last Session)",
+      "type": "table",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH latest AS (SELECT DISTINCT ON (symbol) symbol, close as last_price, timestamp FROM market_data_hot ORDER BY symbol, timestamp DESC), prev AS (SELECT DISTINCT ON (symbol) symbol, close as prev_close FROM market_data_hot WHERE timestamp < (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot) ORDER BY symbol, timestamp DESC) SELECT l.symbol, l.last_price as \"Price\", ROUND(((l.last_price - p.prev_close)/p.prev_close*100)::numeric, 2) as \"Change %\" FROM latest l JOIN prev p ON l.symbol=p.symbol WHERE p.prev_close > 0 ORDER BY \"Change %\" DESC LIMIT 10",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Change %"}, "properties": [{"id": "unit", "value": "percent"}, {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0}]}}, {"id": "custom.cellOptions", "value": {"type": "color-background"}}]},
+          {"matcher": {"id": "byName", "options": "Price"}, "properties": [{"id": "unit", "value": "currencyVND"}]}
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "title": "Top Losers (Last Session)",
+      "type": "table",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH latest AS (SELECT DISTINCT ON (symbol) symbol, close as last_price, timestamp FROM market_data_hot ORDER BY symbol, timestamp DESC), prev AS (SELECT DISTINCT ON (symbol) symbol, close as prev_close FROM market_data_hot WHERE timestamp < (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot) ORDER BY symbol, timestamp DESC) SELECT l.symbol, l.last_price as \"Price\", ROUND(((l.last_price - p.prev_close)/p.prev_close*100)::numeric, 2) as \"Change %\" FROM latest l JOIN prev p ON l.symbol=p.symbol WHERE p.prev_close > 0 ORDER BY \"Change %\" ASC LIMIT 10",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Change %"}, "properties": [{"id": "unit", "value": "percent"}, {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0}]}}, {"id": "custom.cellOptions", "value": {"type": "color-background"}}]},
+          {"matcher": {"id": "byName", "options": "Price"}, "properties": [{"id": "unit", "value": "currencyVND"}]}
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "title": "Volume Leaders (Last Session)",
+      "type": "barchart",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT symbol, SUM(volume) as \"Volume\" FROM market_data_hot WHERE timestamp >= (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot) GROUP BY symbol ORDER BY \"Volume\" DESC LIMIT 10",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "palette-classic"}
+        }
+      },
+      "options": {"orientation": "horizontal", "xTickLabelRotation": 0}
+    },
+    {
+      "id": 4,
+      "title": "VN30 Price Comparison (Normalized %)",
+      "type": "timeseries",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH base AS (SELECT DISTINCT ON (symbol) symbol, close as base_price FROM market_data_hot WHERE $__timeFilter(timestamp) ORDER BY symbol, timestamp ASC) SELECT m.timestamp as time, m.symbol, ROUND(((m.close - b.base_price)/b.base_price*100)::numeric, 2) as \"Change %\" FROM market_data_hot m JOIN base b ON m.symbol=b.symbol WHERE $__timeFilter(m.timestamp) ORDER BY m.timestamp",
+          "refId": "A",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {"drawStyle": "line", "lineWidth": 1, "fillOpacity": 0, "showPoints": "never"}
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Market Breadth (Advancing vs Declining)",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 18},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH latest AS (SELECT DISTINCT ON (symbol) symbol, close FROM market_data_hot ORDER BY symbol, timestamp DESC), prev AS (SELECT DISTINCT ON (symbol) symbol, close as prev_close FROM market_data_hot WHERE timestamp < (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot) ORDER BY symbol, timestamp DESC) SELECT COUNT(*) FILTER (WHERE l.close > p.prev_close) as \"Advancing\" FROM latest l JOIN prev p ON l.symbol=p.symbol",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#73BF69", "value": null}]}
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Declining",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 18},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH latest AS (SELECT DISTINCT ON (symbol) symbol, close FROM market_data_hot ORDER BY symbol, timestamp DESC), prev AS (SELECT DISTINCT ON (symbol) symbol, close as prev_close FROM market_data_hot WHERE timestamp < (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot) ORDER BY symbol, timestamp DESC) SELECT COUNT(*) FILTER (WHERE l.close < p.prev_close) as \"Declining\" FROM latest l JOIN prev p ON l.symbol=p.symbol",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#F2495C", "value": null}]}
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Total Market Volume",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 18},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT SUM(volume) as \"Total Volume\" FROM market_data_hot WHERE timestamp >= (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot)",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#B877D9", "value": null}]}
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Active Symbols",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 18},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COUNT(DISTINCT symbol) as \"Symbols\" FROM market_data_hot WHERE timestamp >= (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot)",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}
+        }
+      }
+    }
+  ],
+  "schemaVersion": 38
+}

@@ -1,0 +1,212 @@
+{
+  "uid": "strategy-performance",
+  "title": "6. Strategy Performance & Comparison",
+  "tags": ["strategy", "backtest", "performance", "sharpe"],
+  "timezone": "browser",
+  "refresh": "5m",
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "strategy",
+        "type": "query",
+        "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+        "query": "SELECT DISTINCT strategy FROM backtest_results ORDER BY strategy",
+        "refresh": 1,
+        "current": {"text": "All", "value": "$__all"},
+        "multi": true,
+        "includeAll": true,
+        "allValue": "",
+        "label": "Strategy"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Best Strategy (by Return)",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT strategy || ' (' || ROUND(AVG(total_return) * 100, 1) || '%)' as \"Best Strategy\" FROM backtest_results GROUP BY strategy ORDER BY AVG(total_return) DESC LIMIT 1",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#73BF69", "value": null}]}
+        }
+      },
+      "options": {"graphMode": "none", "textMode": "value", "colorMode": "value"}
+    },
+    {
+      "id": 2,
+      "title": "Avg Sharpe Ratio",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT ROUND(AVG(sharpe_ratio)::numeric, 2) as \"Avg Sharpe\" FROM backtest_results",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "N/A",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "green", "value": 1.0}]}
+        }
+      },
+      "options": {"graphMode": "none", "textMode": "value", "colorMode": "value"}
+    },
+    {
+      "id": 3,
+      "title": "Total Backtests",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COUNT(*) as \"Total Backtests\" FROM backtest_results",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}
+        }
+      },
+      "options": {"graphMode": "none", "textMode": "value", "colorMode": "value"}
+    },
+    {
+      "id": 4,
+      "title": "Strategy Returns Comparison",
+      "type": "barchart",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT strategy, ROUND(AVG(total_return)::numeric * 100, 2) as \"Avg Return %\", ROUND(MAX(total_return)::numeric * 100, 2) as \"Best Return %\", ROUND(MIN(total_return)::numeric * 100, 2) as \"Worst Return %\" FROM backtest_results WHERE $__timeFilter(timestamp) GROUP BY strategy ORDER BY \"Avg Return %\" DESC",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {"mode": "palette-classic"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0}]}
+        }
+      },
+      "options": {"orientation": "vertical", "xTickLabelRotation": -45, "showValue": "auto", "groupWidth": 0.7, "barWidth": 0.9}
+    },
+    {
+      "id": 5,
+      "title": "Sharpe Ratio by Strategy",
+      "type": "barchart",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT strategy, ROUND(AVG(sharpe_ratio)::numeric, 2) as \"Avg Sharpe\", ROUND(MAX(sharpe_ratio)::numeric, 2) as \"Best Sharpe\", ROUND(AVG(win_rate)::numeric * 100, 1) as \"Avg Win Rate %\" FROM backtest_results WHERE $__timeFilter(timestamp) GROUP BY strategy ORDER BY \"Avg Sharpe\" DESC",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"}
+        },
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Avg Win Rate %"}, "properties": [{"id": "unit", "value": "percent"}]}
+        ]
+      },
+      "options": {"orientation": "vertical", "xTickLabelRotation": -45, "showValue": "auto", "groupWidth": 0.7, "barWidth": 0.9}
+    },
+    {
+      "id": 6,
+      "title": "Strategy Performance Over Time",
+      "type": "timeseries",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT timestamp as time, strategy as metric, ROUND(total_return::numeric * 100, 2) as \"Return %\" FROM backtest_results WHERE $__timeFilter(timestamp) ORDER BY timestamp",
+          "refId": "A",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {"drawStyle": "line", "lineWidth": 1, "fillOpacity": 5, "showPoints": "auto", "pointSize": 5},
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Backtest Results",
+      "type": "table",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT timestamp as \"Time\", strategy as \"Strategy\", regime as \"Regime\", ROUND(total_return::numeric * 100, 2) as \"Return %\", ROUND(sharpe_ratio::numeric, 2) as \"Sharpe\", ROUND(max_drawdown::numeric * 100, 2) as \"Max DD %\", ROUND(win_rate::numeric * 100, 1) as \"Win Rate %\", total_trades as \"Trades\" FROM backtest_results WHERE $__timeFilter(timestamp) ORDER BY timestamp DESC LIMIT 50",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Time"}, "properties": [{"id": "unit", "value": "dateTimeAsLocal"}]},
+          {"matcher": {"id": "byName", "options": "Return %"}, "properties": [{"id": "unit", "value": "percent"}, {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0}]}}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}]},
+          {"matcher": {"id": "byName", "options": "Sharpe"}, "properties": [{"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "green", "value": 1}]}}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}]},
+          {"matcher": {"id": "byName", "options": "Max DD %"}, "properties": [{"id": "unit", "value": "percent"}, {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 15}, {"color": "red", "value": 30}]}}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}]},
+          {"matcher": {"id": "byName", "options": "Win Rate %"}, "properties": [{"id": "unit", "value": "percent"}, {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 40}, {"color": "green", "value": 55}]}}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}]}
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "title": "Optimized Parameters (Latest)",
+      "type": "table",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 28},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT DISTINCT ON (strategy, regime) timestamp as \"Updated\", strategy as \"Strategy\", regime as \"Regime\", optimization_method as \"Method\", ROUND(objective_score::numeric, 4) as \"Score\", ROUND(confidence::numeric * 100, 1) as \"Confidence %\", CASE WHEN is_active THEN 'ACTIVE' ELSE 'inactive' END as \"Status\", parameters::text as \"Parameters\" FROM optimized_parameters ORDER BY strategy, regime, timestamp DESC",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Updated"}, "properties": [{"id": "unit", "value": "dateTimeAsLocal"}]},
+          {"matcher": {"id": "byName", "options": "Confidence %"}, "properties": [{"id": "unit", "value": "percent"}, {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 50}, {"color": "green", "value": 80}]}}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}]},
+          {"matcher": {"id": "byName", "options": "Status"}, "properties": [{"id": "mappings", "value": [{"type": "value", "options": {"ACTIVE": {"text": "ACTIVE", "color": "green"}}}, {"type": "value", "options": {"inactive": {"text": "inactive", "color": "orange"}}}]}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}]},
+          {"matcher": {"id": "byName", "options": "Parameters"}, "properties": [{"id": "custom.width", "value": 400}]}
+        ]
+      }
+    }
+  ],
+  "schemaVersion": 38
+}

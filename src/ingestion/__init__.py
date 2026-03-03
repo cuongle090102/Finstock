@@ -1,0 +1,1 @@
+"""Data ingestion module for Vietnamese market data sources."""

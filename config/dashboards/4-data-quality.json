@@ -1,0 +1,197 @@
+{
+  "uid": "data-quality",
+  "title": "4. Data Quality",
+  "tags": ["quality", "monitoring", "alerts"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "NULL/Zero Values",
+      "type": "stat",
+      "description": "Records with NULL or zero in critical fields",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COUNT(*) as \"Bad Records\" FROM market_data_hot WHERE $__timeFilter(timestamp) AND (open IS NULL OR open = 0 OR high IS NULL OR high = 0 OR low IS NULL OR low = 0 OR close IS NULL OR close = 0 OR volume IS NULL)",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 10}]}
+        }
+      },
+      "options": {"colorMode": "background"}
+    },
+    {
+      "id": 2,
+      "title": "OHLC Violations",
+      "type": "stat",
+      "description": "Records where high < low or high < open/close",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COUNT(*) as \"OHLC Errors\" FROM market_data_hot WHERE $__timeFilter(timestamp) AND (high < low OR high < open OR high < close OR low > open OR low > close)",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}
+        }
+      },
+      "options": {"colorMode": "background"}
+    },
+    {
+      "id": 3,
+      "title": "Duplicate Records",
+      "type": "stat",
+      "description": "Same symbol + timestamp appearing more than once",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COALESCE(SUM(cnt - 1), 0) as \"Duplicates\" FROM (SELECT symbol, timestamp, COUNT(*) as cnt FROM market_data_hot WHERE $__timeFilter(timestamp) GROUP BY symbol, timestamp HAVING COUNT(*) > 1) sub",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 100}]}
+        }
+      },
+      "options": {"colorMode": "background"}
+    },
+    {
+      "id": 4,
+      "title": "Price Anomalies (>10% Intra-Session Jump)",
+      "type": "stat",
+      "description": "Records where price moved >10% within the same trading session",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH ordered AS (SELECT symbol, timestamp, close, date_trunc('day', timestamp) as session_day, LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp) as prev_close, LAG(date_trunc('day', timestamp)) OVER (PARTITION BY symbol ORDER BY timestamp) as prev_day FROM market_data_hot WHERE $__timeFilter(timestamp)) SELECT COUNT(*) as \"Anomalies\" FROM ordered WHERE prev_close > 0 AND session_day = prev_day AND ABS((close - prev_close)/prev_close) > 0.10",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}
+        }
+      },
+      "options": {"colorMode": "background"}
+    },
+    {
+      "id": 5,
+      "title": "Data Quality Score",
+      "type": "gauge",
+      "description": "% of records passing all quality checks",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 4},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH total AS (SELECT COUNT(*) as cnt FROM market_data_hot WHERE $__timeFilter(timestamp)), bad AS (SELECT COUNT(*) as cnt FROM market_data_hot WHERE $__timeFilter(timestamp) AND (open IS NULL OR open = 0 OR high IS NULL OR high = 0 OR low IS NULL OR low = 0 OR close IS NULL OR close = 0 OR volume IS NULL OR high < low OR high < open OR high < close OR low > open OR low > close)) SELECT ROUND((1 - bad.cnt::numeric / GREATEST(total.cnt, 1)) * 100, 2) as \"Quality %\" FROM total, bad",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 90}, {"color": "green", "value": 99}]}
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Volume Outliers (>10x Average)",
+      "type": "table",
+      "description": "Records with volume exceeding 10x the symbol's average",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 4},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH avgs AS (SELECT symbol, AVG(volume) as avg_vol FROM market_data_hot GROUP BY symbol) SELECT m.timestamp as \"Time\", m.symbol, m.volume as \"Volume\", ROUND((m.volume / a.avg_vol)::numeric, 1) as \"x Avg\" FROM market_data_hot m JOIN avgs a ON m.symbol=a.symbol WHERE $__timeFilter(m.timestamp) AND m.volume > a.avg_vol * 10 ORDER BY m.timestamp DESC LIMIT 20",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Time"}, "properties": [{"id": "unit", "value": "dateTimeAsLocal"}]},
+          {"matcher": {"id": "byName", "options": "Volume"}, "properties": [{"id": "unit", "value": "short"}]}
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "title": "Price Anomaly Details (Intra-Session Only)",
+      "type": "table",
+      "description": "Records where price jumped >10% within the same trading session (cross-session gaps excluded)",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 4},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH ordered AS (SELECT symbol, timestamp, close, date_trunc('day', timestamp) as session_day, LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp) as prev_close, LAG(date_trunc('day', timestamp)) OVER (PARTITION BY symbol ORDER BY timestamp) as prev_day FROM market_data_hot WHERE $__timeFilter(timestamp)) SELECT timestamp as \"Time\", symbol, prev_close as \"Prev\", close as \"Close\", ROUND(((close - prev_close)/prev_close*100)::numeric, 2) as \"Jump %\" FROM ordered WHERE prev_close > 0 AND session_day = prev_day AND ABS((close - prev_close)/prev_close) > 0.10 ORDER BY timestamp DESC LIMIT 20",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Time"}, "properties": [{"id": "unit", "value": "dateTimeAsLocal"}]},
+          {"matcher": {"id": "byName", "options": "Prev"}, "properties": [{"id": "unit", "value": "currencyVND"}]},
+          {"matcher": {"id": "byName", "options": "Close"}, "properties": [{"id": "unit", "value": "currencyVND"}]},
+          {"matcher": {"id": "byName", "options": "Jump %"}, "properties": [{"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": -10}, {"color": "red", "value": 10}]}}, {"id": "custom.cellOptions", "value": {"type": "color-background"}}]}
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "title": "Gap Detection — Trading Hours Only (9-15 ICT)",
+      "type": "timeseries",
+      "description": "Symbols reporting per 5-min bucket during trading hours only",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT time_bucket('5 minutes', timestamp) as time, COUNT(DISTINCT symbol) as \"Symbols Reporting\" FROM market_data_hot WHERE $__timeFilter(timestamp) AND EXTRACT(HOUR FROM timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') >= 9 AND EXTRACT(HOUR FROM timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') < 15 AND EXTRACT(DOW FROM timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') NOT IN (0,6) GROUP BY 1 ORDER BY 1",
+          "refId": "A",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"drawStyle": "line", "lineWidth": 1, "fillOpacity": 10},
+          "color": {"fixedColor": "#5794F2", "mode": "fixed"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 15}, {"color": "green", "value": 28}]}
+        }
+      }
+    }
+  ],
+  "schemaVersion": 38
+}

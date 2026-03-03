@@ -1,0 +1,217 @@
+{
+  "uid": "trade-analytics",
+  "title": "7. Trade Analytics & Risk",
+  "tags": ["trading", "risk", "drawdown", "analytics"],
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "symbol",
+        "type": "query",
+        "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+        "query": "SELECT DISTINCT symbol FROM paper_trades ORDER BY symbol",
+        "refresh": 1,
+        "current": {"text": "All", "value": "$__all"},
+        "multi": true,
+        "includeAll": true,
+        "allValue": "",
+        "label": "Symbol"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Max Drawdown",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH equity AS (SELECT timestamp, SUM(pnl) OVER (ORDER BY timestamp) as cum_pnl FROM paper_trades WHERE side = 'SELL'), peaks AS (SELECT timestamp, cum_pnl, MAX(cum_pnl) OVER (ORDER BY timestamp) as peak FROM equity) SELECT COALESCE(ROUND(MIN(cum_pnl - peak)::numeric, 0), 0) as \"Max Drawdown\" FROM peaks",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": -100000}, {"color": "green", "value": 0}]}
+        }
+      },
+      "options": {"graphMode": "none", "textMode": "value", "colorMode": "value"}
+    },
+    {
+      "id": 2,
+      "title": "Profit Factor",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT ROUND(COALESCE(SUM(pnl) FILTER (WHERE pnl > 0) / NULLIF(ABS(SUM(pnl) FILTER (WHERE pnl < 0)), 0), 0)::numeric, 2) as \"Profit Factor\" FROM paper_trades WHERE side = 'SELL'",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "N/A",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 1.0}, {"color": "green", "value": 1.5}]}
+        }
+      },
+      "options": {"graphMode": "none", "textMode": "value", "colorMode": "value"}
+    },
+    {
+      "id": 3,
+      "title": "Avg Win / Avg Loss",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT ROUND(COALESCE(AVG(pnl) FILTER (WHERE pnl > 0) / NULLIF(ABS(AVG(pnl) FILTER (WHERE pnl < 0)), 0), 0)::numeric, 2) as \"Win/Loss Ratio\" FROM paper_trades WHERE side = 'SELL'",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "N/A",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 1.0}, {"color": "green", "value": 1.5}]}
+        }
+      },
+      "options": {"graphMode": "none", "textMode": "value", "colorMode": "value"}
+    },
+    {
+      "id": 4,
+      "title": "Largest Win / Loss",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COALESCE(MAX(pnl), 0) as \"Largest Win\" FROM paper_trades WHERE side = 'SELL' AND pnl > 0",
+          "refId": "A",
+          "format": "table"
+        },
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COALESCE(MIN(pnl), 0) as \"Largest Loss\" FROM paper_trades WHERE side = 'SELL' AND pnl < 0",
+          "refId": "B",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND"
+        },
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Largest Win"}, "properties": [{"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#73BF69", "value": null}]}}]},
+          {"matcher": {"id": "byName", "options": "Largest Loss"}, "properties": [{"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#F2495C", "value": null}]}}]}
+        ]
+      },
+      "options": {"graphMode": "none", "textMode": "value_and_name", "colorMode": "value"}
+    },
+    {
+      "id": 5,
+      "title": "Trade P&L Distribution",
+      "type": "barchart",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH bounds AS (SELECT MIN(pnl) as mn, MAX(pnl) as mx FROM paper_trades WHERE side = 'SELL'), buckets AS (SELECT generate_series(1, 20) as i), ranges AS (SELECT i, mn + (mx - mn) * (i - 1) / 20 as low, mn + (mx - mn) * i / 20 as high FROM buckets, bounds) SELECT ROUND(r.low::numeric, 0) || ' - ' || ROUND(r.high::numeric, 0) as \"P&L Range\", COUNT(t.pnl) as \"Trades\" FROM ranges r LEFT JOIN paper_trades t ON t.pnl >= r.low AND t.pnl < r.high AND t.side = 'SELL' GROUP BY r.i, r.low, r.high ORDER BY r.i",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"fixedColor": "#5794F2", "mode": "fixed"}
+        }
+      },
+      "options": {"orientation": "vertical", "xTickLabelRotation": -45, "showValue": "auto"}
+    },
+    {
+      "id": 6,
+      "title": "Cumulative P&L by Symbol",
+      "type": "timeseries",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT timestamp as time, symbol as metric, SUM(pnl) OVER (PARTITION BY symbol ORDER BY timestamp) as \"P&L\" FROM paper_trades WHERE $__timeFilter(timestamp) AND side = 'SELL' ORDER BY timestamp",
+          "refId": "A",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND",
+          "custom": {"drawStyle": "line", "lineWidth": 1, "fillOpacity": 0, "showPoints": "never"},
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Drawdown from Peak",
+      "type": "timeseries",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH equity AS (SELECT timestamp, SUM(pnl) OVER (ORDER BY timestamp) as cum_pnl FROM paper_trades WHERE $__timeFilter(timestamp) AND side = 'SELL'), peaks AS (SELECT timestamp, cum_pnl, MAX(cum_pnl) OVER (ORDER BY timestamp) as peak FROM equity) SELECT timestamp as time, cum_pnl - peak as \"Drawdown\" FROM peaks ORDER BY timestamp",
+          "refId": "A",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND",
+          "custom": {"drawStyle": "line", "lineWidth": 1, "fillOpacity": 30, "showPoints": "never"},
+          "color": {"fixedColor": "#F2495C", "mode": "fixed"},
+          "max": 0
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Win/Loss Streaks",
+      "type": "table",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH trades AS (SELECT timestamp, symbol, pnl, CASE WHEN pnl > 0 THEN 'WIN' ELSE 'LOSS' END as result FROM paper_trades WHERE side = 'SELL' ORDER BY timestamp), groups AS (SELECT timestamp, symbol, pnl, result, ROW_NUMBER() OVER (ORDER BY timestamp) - ROW_NUMBER() OVER (PARTITION BY result ORDER BY timestamp) as grp FROM trades), streaks AS (SELECT result as \"Type\", COUNT(*) as \"Streak\", MIN(timestamp) as \"Start\", MAX(timestamp) as \"End\", ROUND(SUM(pnl)::numeric, 0) as \"Streak P&L\" FROM groups GROUP BY result, grp HAVING COUNT(*) >= 2) SELECT \"Type\", \"Streak\", \"Start\", \"End\", \"Streak P&L\" FROM streaks ORDER BY \"Start\" DESC LIMIT 30",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Start"}, "properties": [{"id": "unit", "value": "dateTimeAsLocal"}]},
+          {"matcher": {"id": "byName", "options": "End"}, "properties": [{"id": "unit", "value": "dateTimeAsLocal"}]},
+          {"matcher": {"id": "byName", "options": "Streak P&L"}, "properties": [{"id": "unit", "value": "currencyVND"}, {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0}]}}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}]},
+          {"matcher": {"id": "byName", "options": "Type"}, "properties": [{"id": "mappings", "value": [{"type": "value", "options": {"WIN": {"text": "WIN", "color": "green"}}}, {"type": "value", "options": {"LOSS": {"text": "LOSS", "color": "red"}}}]}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}]}
+        ]
+      }
+    }
+  ],
+  "schemaVersion": 38
+}

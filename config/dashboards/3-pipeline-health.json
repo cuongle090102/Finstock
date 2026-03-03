@@ -1,0 +1,191 @@
+{
+  "uid": "pipeline-health",
+  "title": "3. Pipeline Health",
+  "tags": ["kafka", "pipeline", "ops"],
+  "timezone": "browser",
+  "refresh": "10s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Data Freshness",
+      "type": "stat",
+      "description": "Time since last record. Only alerts during market hours (9-15 ICT, Mon-Fri).",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH market AS (SELECT CASE WHEN EXTRACT(DOW FROM NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') IN (0,6) THEN false WHEN EXTRACT(HOUR FROM NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') >= 9 AND EXTRACT(HOUR FROM NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') < 15 THEN true ELSE false END as is_open), freshness AS (SELECT EXTRACT(EPOCH FROM (NOW() - MAX(timestamp)))::int as secs FROM market_data_hot) SELECT CASE WHEN m.is_open THEN f.secs ELSE -1 END as \"Seconds Ago\" FROM market m, freshness f",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "mappings": [
+            {"type": "value", "options": {"-1": {"text": "MARKET CLOSED", "color": "#808080"}}}
+          ],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 120}, {"color": "red", "value": 300}]}
+        }
+      },
+      "options": {"graphMode": "none", "colorMode": "background"}
+    },
+    {
+      "id": 2,
+      "title": "Records (Last Session)",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COUNT(*) as \"Records\" FROM market_data_hot WHERE timestamp >= (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot)",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{"type": "value", "options": {"0": {"text": "NO DATA", "color": "red"}}}],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 1}, {"color": "green", "value": 100}]}
+        }
+      },
+      "options": {"colorMode": "background"}
+    },
+    {
+      "id": 3,
+      "title": "Symbols Reporting (Last Session)",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COUNT(DISTINCT symbol) || '/30' as \"Symbols\" FROM market_data_hot WHERE timestamp >= (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot)",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 15}, {"color": "green", "value": 28}]}
+        }
+      },
+      "options": {"colorMode": "background"}
+    },
+    {
+      "id": 4,
+      "title": "Total Records",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT COUNT(*) as \"Total\" FROM market_data_hot",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Ingestion Rate (per minute) — Trading Hours Only",
+      "type": "timeseries",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT time_bucket('1 minute', timestamp) as time, COUNT(*) as \"Messages/min\" FROM market_data_hot WHERE $__timeFilter(timestamp) AND EXTRACT(HOUR FROM timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') >= 9 AND EXTRACT(HOUR FROM timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') < 15 AND EXTRACT(DOW FROM timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') NOT IN (0,6) GROUP BY 1 ORDER BY 1",
+          "refId": "A",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"drawStyle": "bars", "fillOpacity": 30, "lineWidth": 0},
+          "color": {"fixedColor": "#5794F2", "mode": "fixed"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Records per Symbol (Last Session)",
+      "type": "barchart",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT symbol, COUNT(*) as \"Records\" FROM market_data_hot WHERE timestamp >= (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot) GROUP BY symbol ORDER BY symbol",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        }
+      },
+      "options": {"orientation": "horizontal"}
+    },
+    {
+      "id": 7,
+      "title": "Missing Symbols (Last Session)",
+      "type": "table",
+      "description": "Symbols with no data in last trading session",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 12},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH last_session AS (SELECT date_trunc('day', MAX(timestamp)) as session_start FROM market_data_hot), all_symbols AS (SELECT DISTINCT symbol FROM market_data_hot), recent AS (SELECT DISTINCT symbol FROM market_data_hot WHERE timestamp >= (SELECT session_start FROM last_session)) SELECT a.symbol as \"Missing Symbol\", MAX(m.timestamp) as \"Last Seen\" FROM all_symbols a LEFT JOIN recent r ON a.symbol=r.symbol LEFT JOIN market_data_hot m ON a.symbol=m.symbol WHERE r.symbol IS NULL GROUP BY a.symbol ORDER BY \"Last Seen\" DESC",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Last Seen"}, "properties": [{"id": "unit", "value": "dateTimeAsLocal"}]}
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "title": "Ingestion Timeline by Symbol — Trading Hours Only",
+      "type": "state-timeline",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 12},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT time_bucket('5 minutes', timestamp) as time, symbol, COUNT(*) as records FROM market_data_hot WHERE $__timeFilter(timestamp) AND EXTRACT(HOUR FROM timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') >= 9 AND EXTRACT(HOUR FROM timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') < 15 AND EXTRACT(DOW FROM timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') NOT IN (0,6) GROUP BY 1, 2 ORDER BY 1",
+          "refId": "A",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 1}, {"color": "green", "value": 3}]},
+          "custom": {"fillOpacity": 80}
+        }
+      }
+    }
+  ],
+  "schemaVersion": 38
+}

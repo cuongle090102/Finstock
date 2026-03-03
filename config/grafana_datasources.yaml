@@ -1,0 +1,21 @@
+# Grafana Datasource Provisioning
+# Auto-configures TimescaleDB connection on Grafana startup
+
+apiVersion: 1
+
+datasources:
+  - name: TimescaleDB
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: finstock_market_data
+    user: finstock_user
+    secureJsonData:
+      password: $POSTGRES_PASSWORD
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1600  # PostgreSQL 16
+      timescaledb: true
+    isDefault: true
+    editable: true
+    version: 1

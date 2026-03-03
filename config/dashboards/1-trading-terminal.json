@@ -1,0 +1,241 @@
+{
+  "uid": "trading-terminal",
+  "title": "1. Trading Terminal",
+  "tags": ["trading", "candlestick", "live"],
+  "timezone": "browser",
+  "refresh": "10s",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "symbol",
+        "type": "query",
+        "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+        "query": "SELECT DISTINCT symbol FROM market_data_hot ORDER BY symbol",
+        "refresh": 1,
+        "current": {"text": "VNM", "value": "VNM"},
+        "multi": false,
+        "includeAll": false,
+        "label": "Symbol"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 9,
+      "title": "Market Status",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 3, "w": 5, "x": 0, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT CASE WHEN EXTRACT(DOW FROM NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') IN (0,6) THEN 0 WHEN EXTRACT(HOUR FROM NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') >= 9 AND EXTRACT(HOUR FROM NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') < 15 THEN 2 ELSE 1 END as status",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "WEEKEND", "color": "orange"}}},
+            {"type": "value", "options": {"1": {"text": "CLOSED", "color": "red"}}},
+            {"type": "value", "options": {"2": {"text": "OPEN", "color": "green"}}}
+          ],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}]}
+        }
+      },
+      "options": {"graphMode": "none", "textMode": "value", "colorMode": "background"}
+    },
+    {
+      "id": 1,
+      "title": "",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 3, "w": 3, "x": 5, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT close as \"$symbol\" FROM market_data_hot WHERE symbol = '$symbol' ORDER BY timestamp DESC LIMIT 1",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "white", "value": null}]}
+        }
+      },
+      "options": {"graphMode": "none", "textMode": "value", "colorMode": "value"}
+    },
+    {
+      "id": 2,
+      "title": "Change %",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 3, "w": 3, "x": 8, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH last_session AS (SELECT date_trunc('day', MAX(timestamp)) as session_start FROM market_data_hot), latest AS (SELECT close FROM market_data_hot WHERE symbol='$symbol' ORDER BY timestamp DESC LIMIT 1), prev AS (SELECT close FROM market_data_hot WHERE symbol='$symbol' AND timestamp < (SELECT session_start FROM last_session) ORDER BY timestamp DESC LIMIT 1) SELECT ROUND(((l.close - p.close) / p.close * 100)::numeric, 2) as \"Change %\" FROM latest l, prev p",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0}]}
+        }
+      },
+      "options": {"graphMode": "none", "textMode": "value", "colorMode": "value"}
+    },
+    {
+      "id": 3,
+      "title": "Session High",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 3, "w": 3, "x": 11, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT MAX(high) as \"Session High\" FROM market_data_hot WHERE symbol='$symbol' AND timestamp >= (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot)",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#73BF69", "value": null}]}
+        }
+      },
+      "options": {"graphMode": "none"}
+    },
+    {
+      "id": 4,
+      "title": "Session Low",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 3, "w": 3, "x": 14, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT MIN(low) as \"Session Low\" FROM market_data_hot WHERE symbol='$symbol' AND timestamp >= (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot)",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#F2495C", "value": null}]}
+        }
+      },
+      "options": {"graphMode": "none"}
+    },
+    {
+      "id": 5,
+      "title": "Session Volume",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 3, "w": 3, "x": 17, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT SUM(volume) as \"Session Volume\" FROM market_data_hot WHERE symbol='$symbol' AND timestamp >= (SELECT date_trunc('day', MAX(timestamp)) FROM market_data_hot)",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#B877D9", "value": null}]}
+        }
+      },
+      "options": {"graphMode": "none"}
+    },
+    {
+      "id": 6,
+      "title": "Last Update",
+      "type": "stat",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 3, "w": 4, "x": 20, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT MAX(timestamp) as \"Last Update\" FROM market_data_hot WHERE symbol='$symbol'",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsLocal",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}
+        }
+      },
+      "options": {"graphMode": "none"}
+    },
+    {
+      "id": 7,
+      "title": "Candlestick + SMA — $symbol",
+      "type": "candlestick",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 14, "w": 24, "x": 0, "y": 3},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "WITH candles AS (SELECT time_bucket('1 hour', timestamp) as time, first(open, timestamp) as open, MAX(high) as high, MIN(low) as low, last(close, timestamp) as close FROM market_data_hot WHERE $__timeFilter(timestamp) AND symbol='$symbol' GROUP BY 1 ORDER BY 1), sma AS (SELECT time, open, high, low, close, AVG(close) OVER (ORDER BY time ROWS BETWEEN 9 PRECEDING AND CURRENT ROW) as sma_10, AVG(close) OVER (ORDER BY time ROWS BETWEEN 19 PRECEDING AND CURRENT ROW) as sma_20, AVG(close) OVER (ORDER BY time ROWS BETWEEN 49 PRECEDING AND CURRENT ROW) as sma_50 FROM candles) SELECT time, open, high, low, close, ROUND(sma_10::numeric,2) as \"SMA 10\", ROUND(sma_20::numeric,2) as \"SMA 20\", ROUND(sma_50::numeric,2) as \"SMA 50\" FROM sma",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND"
+        },
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "SMA 10"}, "properties": [{"id": "custom.drawStyle", "value": "line"}, {"id": "custom.lineWidth", "value": 1}, {"id": "color", "value": {"fixedColor": "yellow", "mode": "fixed"}}, {"id": "custom.fillOpacity", "value": 0}]},
+          {"matcher": {"id": "byName", "options": "SMA 20"}, "properties": [{"id": "custom.drawStyle", "value": "line"}, {"id": "custom.lineWidth", "value": 1}, {"id": "color", "value": {"fixedColor": "orange", "mode": "fixed"}}, {"id": "custom.fillOpacity", "value": 0}]},
+          {"matcher": {"id": "byName", "options": "SMA 50"}, "properties": [{"id": "custom.drawStyle", "value": "line"}, {"id": "custom.lineWidth", "value": 1}, {"id": "color", "value": {"fixedColor": "cyan", "mode": "fixed"}}, {"id": "custom.fillOpacity", "value": 0}]}
+        ]
+      },
+      "options": {
+        "mode": "candles",
+        "candleStyle": "candles",
+        "colorStrategy": "open-close",
+        "colors": {"up": "#73BF69", "down": "#F2495C", "flat": "#808080"},
+        "includeAllFields": true
+      }
+    },
+    {
+      "id": 8,
+      "title": "Volume — $symbol",
+      "type": "timeseries",
+      "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+      "gridPos": {"h": 5, "w": 24, "x": 0, "y": 17},
+      "targets": [
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32"},
+          "rawSql": "SELECT time_bucket('1 hour', timestamp) as time, SUM(volume) as volume FROM market_data_hot WHERE $__timeFilter(timestamp) AND symbol='$symbol' GROUP BY 1 ORDER BY 1",
+          "refId": "A",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {"drawStyle": "bars", "fillOpacity": 50, "lineWidth": 0},
+          "color": {"fixedColor": "#5794F2", "mode": "fixed"}
+        }
+      }
+    }
+  ],
+  "schemaVersion": 38
+}

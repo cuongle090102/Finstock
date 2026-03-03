@@ -1,0 +1,37 @@
+# Paper Trading Service Configuration
+
+# Trading Parameters
+trading:
+  initial_capital: 1000000000  # 1 billion VND
+  commission_rate: 0.0015      # 0.15% commission
+  tax_rate: 0.001              # 0.1% tax
+  max_position_size: 0.1       # 10% of portfolio per position
+
+# Market Hours (Vietnam time UTC+7)
+market_hours:
+  morning_start: "09:00"
+  morning_end: "11:30"
+  afternoon_start: "13:00"
+  afternoon_end: "15:00"
+  timezone: "Asia/Ho_Chi_Minh"
+
+# Kafka Configuration
+kafka:
+  consumer_group: "paper_trading_group"
+  topics:
+    market_data: "market_data"
+    backtest_results: "backtest_results"
+    signals: "signals"
+  auto_offset_reset: "latest"
+  enable_auto_commit: true
+
+# Database Configuration
+database:
+  retry_attempts: 3
+  retry_delay: 5  # seconds
+  connection_pool_size: 5
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

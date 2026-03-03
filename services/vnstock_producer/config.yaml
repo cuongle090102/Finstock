@@ -1,0 +1,54 @@
+# VnStock Producer Service Configuration
+
+# VnStock API Configuration
+vnstock:
+  source: "vci"  # vci, tcbs, or msn
+  timeout: 30
+  retry_attempts: 3
+  retry_delay: 5  # seconds
+
+# Data Fetching Configuration
+data_fetching:
+  interval_seconds: 5  # Fetch every 5 seconds (as per FLOW.md)
+  symbols_source: "vn30"  # vn30, all, or custom list
+  custom_symbols: []  # Used if symbols_source is "custom"
+
+# Kafka Configuration
+kafka:
+  topic: "market_data"
+  compression_type: "gzip"
+  batch_size: 16384  # 16KB
+  linger_ms: 10
+  acks: "all"
+  retries: 3
+
+# Market Hours (Vietnam time UTC+7)
+market_hours:
+  enabled: true  # Only fetch during market hours
+  morning_start: "09:00"
+  morning_end: "11:30"
+  afternoon_start: "13:00"
+  afternoon_end: "15:00"
+  timezone: "Asia/Ho_Chi_Minh"
+
+# Performance Settings
+performance:
+  max_workers: 5  # Parallel fetching for multiple symbols
+  request_timeout: 10  # seconds
+  rate_limit_per_second: 10  # Max API requests per second
+
+# Error Handling
+error_handling:
+  max_consecutive_errors: 5
+  backoff_multiplier: 2
+  max_backoff_seconds: 300  # 5 minutes
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Health Check
+health_check:
+  enabled: true
+  port: 8080

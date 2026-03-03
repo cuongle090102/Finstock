@@ -1,0 +1,22 @@
+# TimescaleDB Consumer Service Dependencies
+
+# Kafka
+kafka-python==2.0.2
+python-snappy==0.6.1
+
+# Database
+psycopg2-binary==2.9.9
+
+# Data processing
+pandas==2.1.4
+numpy==1.26.2
+
+# Configuration
+python-dotenv==1.0.0
+PyYAML==6.0.1
+
+# Logging
+structlog==24.1.0
+
+# Utilities
+pytz==2024.1
