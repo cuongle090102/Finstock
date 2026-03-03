@@ -35,10 +35,10 @@ finstock/
 │   ├── dashboards/           # Grafana JSON dashboards (7)
 │   ├── grafana_*.yaml        # Grafana provisioning
 │   ├── init-timescaledb.sql  # TimescaleDB schema (5 hypertables)
-│   └── postgres_init.sql     # Database initialization
+│   └── postgres_init.sql     # Database Airflow initialization
 │
 ├── src/                      # Python source code
-│   ├── strategies/           # Trading strategies (4 + adaptive)
+│   ├── strategies/           # Trading strategies 
 │   ├── regime/               # Market regime detection
 │   ├── backtesting/          # Backtesting framework
 │   ├── kafka_utils/          # Kafka producers/consumers
@@ -56,7 +56,7 @@ finstock/
 │   └── dags/                 # 3 production DAGs
 │       └── functions/        # DAG task functions
 │
-├── tests/                    # Test suite (67 tests)
+├── tests/                    # Test suite 
 │   ├── integration/          # Integration tests
 │   └── test_*.py             # Unit tests
 │
@@ -147,5 +147,5 @@ finstock/
 
 
 
-**Last Updated**: 2026-03-03
+
 
