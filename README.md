@@ -1,4 +1,4 @@
-# Finstock - Vietnamese Algorithmic Trading System
+# Finstock - Financial Data Engineering in Vietnamese Stock Market
 
 **Status**: Simulated Paper Trading
 **Architecture**: Microservices on Docker 
