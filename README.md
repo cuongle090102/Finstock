@@ -4,8 +4,10 @@
 **Architecture**: Microservices on Docker 
 
 ---
-<video src="https://res.cloudinary.com/dt65gnluq/video/upload/v1772608603/recording_xpy8qm.webm" width="100%" autoplay loop muted playsinline>
-</video>
+<div align="center">
+  <video src="https://res.cloudinary.com/dt65gnluq/video/upload/v1772608603/recording_xpy8qm.webm" width="100%" controls>
+    Your browser does not support the video tag.
+  </video>
 ## Quick Start
 
 ```bash
