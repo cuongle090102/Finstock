@@ -4,10 +4,18 @@
 **Architecture**: Microservices on Docker 
 
 ---
+
+## 📺 System Demo
 <div align="center">
   <video src="https://res.cloudinary.com/dt65gnluq/video/upload/v1772608603/recording_xpy8qm.webm" width="100%" controls>
     Your browser does not support the video tag.
   </video>
+  <p align="right"><i>Real-time ingestion: VnStock → Kafka → TimescaleDB (60s walkthrough)</i></p>
+</div>
+
+---
+---
+
 ## Quick Start
 
 ```bash
