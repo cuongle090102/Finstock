@@ -3,11 +3,9 @@
 **Status**: Simulated Paper Trading
 **Architecture**: Microservices on Docker 
 
----
 <div align="center">
-  <video src="docs/recording.mp4" width="100%" controls></video>
+  <img src="docs/demo.gif" width="80%" alt="Finstock System Demo">
 </div>
----
 
 ## Quick Start
 
