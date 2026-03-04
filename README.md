@@ -1,8 +1,19 @@
-# Finstock - Vietnamese Algorithmic Trading System
+# Finstock - Financial Data Engineering in Vietnamese Stock Market
 
 **Status**: Simulated Paper Trading
 **Architecture**: Microservices on Docker 
 
+---
+
+## 📺 System Demo
+<div align="center">
+  <video src="https://res.cloudinary.com/dt65gnluq/video/upload/v1772608603/recording_xpy8qm.webm" width="100%" controls>
+    Your browser does not support the video tag.
+  </video>
+  <p align="right"><i>Real-time ingestion: VnStock → Kafka → TimescaleDB (60s walkthrough)</i></p>
+</div>
+
+---
 ---
 
 ## Quick Start
@@ -35,10 +46,10 @@ finstock/
 │   ├── dashboards/           # Grafana JSON dashboards (7)
 │   ├── grafana_*.yaml        # Grafana provisioning
 │   ├── init-timescaledb.sql  # TimescaleDB schema (5 hypertables)
-│   └── postgres_init.sql     # Database initialization
+│   └── postgres_init.sql     # Database Airflow initialization
 │
 ├── src/                      # Python source code
-│   ├── strategies/           # Trading strategies (4 + adaptive)
+│   ├── strategies/           # Trading strategies 
 │   ├── regime/               # Market regime detection
 │   ├── backtesting/          # Backtesting framework
 │   ├── kafka_utils/          # Kafka producers/consumers
@@ -56,7 +67,7 @@ finstock/
 │   └── dags/                 # 3 production DAGs
 │       └── functions/        # DAG task functions
 │
-├── tests/                    # Test suite (67 tests)
+├── tests/                    # Test suite 
 │   ├── integration/          # Integration tests
 │   └── test_*.py             # Unit tests
 │
@@ -147,5 +158,5 @@ finstock/
 
 
 
-**Last Updated**: 2026-03-03
+
 
