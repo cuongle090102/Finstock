@@ -4,7 +4,7 @@
 **Architecture**: Microservices on Docker 
 
 <div align="center">
-  <img src="docs/demo.gif" width="80%" alt="Finstock System Demo">
+  <img src="docs/demo.gif" width="40%" alt="Finstock System Demo">
 </div>
 
 ## Quick Start
